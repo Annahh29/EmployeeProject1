@@ -1,33 +1,18 @@
 ﻿using Abp.Dependency;
 using Abp.Domain.Entities.Auditing;
-using EmployeeProject1.Domain;
+using EmployeeProject1.Domain.Employees;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
 public class Employee: AuditedEntity<string>
 {
-    private string _id;
     public override string Id { get; set; }
-    //public override string Id
-    //{
-    //    get
-    //    {
-    //        if (string.IsNullOrEmpty(_id))
-    //        {
-    //            _id =   IocManager.Instance.Resolve<EmployeeManager>().GenerateID();
-    //        }
-    //        return _id;
-    //    }
-    //    set 
-    //    {
-    //        _id = value;
-    //    }
-    //}
-
+   
     public Employee()
     {
-        Id = IocManager.Instance.Resolve<EmployeeManager>().GenerateID();
+        
+            Id = IocManager.Instance.Resolve<EmployeeManager>().GenerateID();
     }
 
     [StringLength(100)]

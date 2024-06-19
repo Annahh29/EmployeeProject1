@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using EmployeeProject1.Domain;
+using EmployeeProject1.Domain.Skills;
 using EmployeeProject1.Services.Employees;
 using System;
 using System.Collections.Generic;

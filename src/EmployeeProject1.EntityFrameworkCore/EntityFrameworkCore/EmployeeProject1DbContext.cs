@@ -3,7 +3,8 @@ using Abp.Zero.EntityFrameworkCore;
 using EmployeeProject1.Authorization.Roles;
 using EmployeeProject1.Authorization.Users;
 using EmployeeProject1.MultiTenancy;
-using EmployeeProject1.Domain;
+using EmployeeProject1.Domain.Employees;
+using EmployeeProject1.Domain.Skills;
 
 namespace EmployeeProject1.EntityFrameworkCore
 {

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EmployeeProject1.Domain.Enums
+namespace EmployeeProject1.Domain.Skills
 {
-    public enum RefListYearsOfExperience: int
+    public enum RefListYearsOfExperience : int
     {
         LessThanOneYear = 1,
         OneToThreeYears = 2,

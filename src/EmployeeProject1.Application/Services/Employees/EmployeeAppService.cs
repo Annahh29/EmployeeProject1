@@ -5,8 +5,8 @@ using Abp.Domain.Repositories;
 using Abp.Domain.Uow;
 using Abp.Runtime.Validation;
 using Abp.UI;
-using EmployeeProject1.Domain;
-using EmployeeProject1.Domain.Enums;
+using EmployeeProject1.Domain.Employees;
+using EmployeeProject1.Domain.Skills;
 using EmployeeProject1.Services.Skills;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -102,98 +102,105 @@ namespace EmployeeProject1.Services.Employees
             {
 
                 throw ex;
-            }    
+            }
 
         }
 
         [HttpPut]
         public async Task<EmployeeDto> UpdateEmployeeAsync(EmployeeDto input)
         {
-            if (input == null)
+            try
             {
-                throw new UserFriendlyException("Please provide valid input data.");
-            }
-
-            // Fetch the existing employee entity
-            var existingEmployee = await _employeeRepository.GetAsync(input.Employee.Id);
-            if (existingEmployee == null)
-            {
-                throw new UserFriendlyException("Employee not found.");
-            }
-
-            // Update the employee's properties
-            var employee = ObjectMapper.Map<Employee>(input.Employee);
-
-
-            // Update the address if provided
-            if (input.Address != null)
-            {
-                var existingAddress = existingEmployee.Address;
-                if (existingAddress == null)
+                if (input == null)
                 {
-                    var newAddress = ObjectMapper.Map<Address>(input.Address);
-                    existingEmployee.Address = await _addressRepository.InsertAsync(newAddress);
+                    throw new UserFriendlyException("Please provide valid input data.");
                 }
-                else
-                {
-                    existingAddress = ObjectMapper.Map<Address>(input.Address);
-                    await _addressRepository.UpdateAsync(existingAddress);
-                }
-            }
 
-            // Update skills
-            if (input.Skills != null)
-            {
-                // Remove skills that are not in the input list
-                var existingSkills = await _skillRepository.GetAllListAsync(s => s.Employee.Id == existingEmployee.Id);
-                var inputSkillIds = input.Skills.Select(s => s.Id).ToList();
-                foreach (var existingSkill in existingSkills)
+                // Fetch the existing employee entity
+                var existingEmployee = await _employeeRepository.GetAllIncluding(e => e.Address).FirstOrDefaultAsync( x =>x.Id == input.Employee.Id);
+                if (existingEmployee == null)
                 {
-                    if (!inputSkillIds.Contains(existingSkill.Id))
+                    throw new UserFriendlyException("Employee not found.");
+                }
+
+                // Update the employee's properties
+                ObjectMapper.Map(input.Employee, existingEmployee); // Map properties directly to the existing employee
+
+                // Update the address if provided
+                if (input.Address != null)
+                {
+                    if (existingEmployee.Address == null)
                     {
-                        await _skillRepository.DeleteAsync(existingSkill);
-                    }
-                }
-
-                // Add or update skills
-                foreach (var skillDto in input.Skills)
-                {
-                    if (skillDto.Id == null)
-                    {
-                        // New skill
-                        var newSkill = ObjectMapper.Map<Skill>(skillDto);
-                        newSkill.Employee = existingEmployee;
-                        await _skillRepository.InsertAsync(newSkill);
+                        var newAddress = ObjectMapper.Map<Address>(input.Address);
+                        existingEmployee.Address = await _addressRepository.InsertAsync(newAddress);
                     }
                     else
                     {
-                        // Existing skill
-                        var existingSkill = existingSkills.FirstOrDefault(s => s.Id == skillDto.Id);
-                        if (existingSkill != null)
+                        ObjectMapper.Map(input.Address, existingEmployee.Address); // Map properties directly to the existing address
+                        await _addressRepository.UpdateAsync(existingEmployee.Address);
+                    }
+                }
+
+                // Update skills
+                if (input.Skills != null)
+                {
+                    // Remove skills that are not in the input list
+                    var existingSkills = await _skillRepository.GetAllListAsync(s => s.Employee.Id == existingEmployee.Id);
+                    var inputSkillIds = input.Skills.Select(s => s.Id).ToList();
+                    foreach (var existingSkill in existingSkills)
+                    {
+                        if (!inputSkillIds.Contains(existingSkill.Id))
                         {
-                            existingSkill.Name = skillDto.Name;
-                            existingSkill.YearsOfExperience = (RefListYearsOfExperience)skillDto.YearsOfExperience;
-                            existingSkill.SeniorityRating = (RefListSeniorityRating)skillDto.SeniorityRating;
-                            await _skillRepository.UpdateAsync(existingSkill);
+                            await _skillRepository.DeleteAsync(existingSkill);
+                        }
+                    }
+
+                    // Add or update skills
+                    foreach (var skillDto in input.Skills)
+                    {
+                        if (skillDto.Id == null)
+                        {
+                            // New skill
+                            var newSkill = ObjectMapper.Map<Skill>(skillDto);
+                            newSkill.Employee = existingEmployee;
+                            await _skillRepository.InsertAsync(newSkill);
+                        }
+                        else
+                        {
+                            // Existing skill
+                            var existingSkill = existingSkills.FirstOrDefault(s => s.Id == skillDto.Id);
+                            if (existingSkill != null)
+                            {
+                                ObjectMapper.Map(skillDto, existingSkill); // Map properties directly to the existing skill
+                                await _skillRepository.UpdateAsync(existingSkill);
+                            }
                         }
                     }
                 }
+
+                // Update the employee in the repository
+                var updatedEmployee = await _employeeRepository.UpdateAsync(existingEmployee);
+
+                // Map back the updated employee to EmployeeDto
+
+                var resultEmployeeDto = new EmployeeDto();
+                resultEmployeeDto.Employee = ObjectMapper.Map<EmployeeInputDto>(updatedEmployee);
+                resultEmployeeDto.Address = ObjectMapper.Map<AddressDto>(updatedEmployee.Address);
+
+
+                 var updatedSkills = await _skillRepository.GetAllListAsync(s => s.Employee.Id == existingEmployee.Id);
+                  resultEmployeeDto.Skills = ObjectMapper.Map<List<SkillDto>>(updatedSkills);
+
+                return resultEmployeeDto;
+
+
+
             }
-
-            // Update the employee in the repository
-            await _employeeRepository.UpdateAsync(existingEmployee);
-
-            // Map back the updated employee to EmployeeDto
-            var resultEmployeeDto = ObjectMapper.Map<EmployeeDto>(existingEmployee);
-            if (existingEmployee.Address != null)
+            catch (Exception ex)
             {
-                resultEmployeeDto.Address = ObjectMapper.Map<AddressDto>(existingEmployee.Address);
+                throw ex;
             }
 
-            var updatedSkills = await _skillRepository.GetAllListAsync(s => s.Employee.Id == existingEmployee.Id);
-            resultEmployeeDto.Skills = ObjectMapper.Map<List<SkillDto>>(updatedSkills);
-
-            return resultEmployeeDto;
         }
 
         [HttpDelete]
@@ -267,6 +274,7 @@ namespace EmployeeProject1.Services.Employees
         }
 
         [HttpGet]
+        [UnitOfWork]
         public async Task<List<EmployeeDto>> GetAllEmployeesAsync()
         {
             // Fetch all employees including their addresses
@@ -299,16 +307,7 @@ namespace EmployeeProject1.Services.Employees
         }
 
 
-        public async Task<List<Employee>> GetBySearch(string term)
-        {
-
-            var searchResult = _employeeRepository.GetAllIncluding(e => e.Address).Where(e => e.FirstName.ToLower().Contains(term.ToLower())
-            || e.LastName.ToLower().Contains(term.ToLower())
-            || e.EmailAddress.ToLower().Contains(term.ToLower()));
-            var result = searchResult.Take(10);
-            return ObjectMapper.Map<List<Employee>>(searchResult);
-        }
-
+        
         public async Task ValidateEmployee(Employee input)
         {
             if (input == null)

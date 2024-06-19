@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EmployeeProject1.Domain
+namespace EmployeeProject1.Domain.Employees
 {
-    public class Address: AuditedEntity<Guid>
+    public class Address : AuditedEntity<Guid>
     {
         [StringLength(200)]
         public string Street { get; set; }
