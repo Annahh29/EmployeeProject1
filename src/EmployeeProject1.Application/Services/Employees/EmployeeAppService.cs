@@ -117,7 +117,7 @@ namespace EmployeeProject1.Services.Employees
                 }
 
                 // Fetch the existing employee entity
-                var existingEmployee = await _employeeRepository.GetAllIncluding(e => e.Address).FirstOrDefaultAsync( x =>x.Id == input.Employee.Id);
+                var existingEmployee = await _employeeRepository.GetAllIncluding(e => e.Address).FirstOrDefaultAsync(x => x.Id == input.Employee.Id);
                 if (existingEmployee == null)
                 {
                     throw new UserFriendlyException("Employee not found.");
@@ -188,8 +188,8 @@ namespace EmployeeProject1.Services.Employees
                 resultEmployeeDto.Address = ObjectMapper.Map<AddressDto>(updatedEmployee.Address);
 
 
-                 var updatedSkills = await _skillRepository.GetAllListAsync(s => s.Employee.Id == existingEmployee.Id);
-                  resultEmployeeDto.Skills = ObjectMapper.Map<List<SkillDto>>(updatedSkills);
+                var updatedSkills = await _skillRepository.GetAllListAsync(s => s.Employee.Id == existingEmployee.Id);
+                resultEmployeeDto.Skills = ObjectMapper.Map<List<SkillDto>>(updatedSkills);
 
                 return resultEmployeeDto;
 
@@ -307,7 +307,7 @@ namespace EmployeeProject1.Services.Employees
         }
 
 
-        
+
         public async Task ValidateEmployee(Employee input)
         {
             if (input == null)
